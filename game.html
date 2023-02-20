@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Puzzle Game</title>
+    <style>
+      #gameCanvas {
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <script>
+      // Set up the game canvas
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+
+      // Set up the game board
+      const BLOCK_SIZE = 40;
+      const NUM_ROWS = 12;
+      const NUM_COLS = 8;
+      const BOARD_LEFT_MARGIN = 50;
+      const BOARD_TOP_MARGIN = 50;
+
+      // Define block colors
+      const RED = "rgb(255, 0, 0)";
+      const GREEN = "rgb(0, 255, 0)";
+      const BLUE = "rgb(0, 0, 255)";
+      const YELLOW = "rgb(255, 255, 0)";
+      const PURPLE = "rgb(255, 0, 255)";
+      const ORANGE = "rgb(255, 128, 0)";
+
+      // Load images
+      const diamondImage = new Image();
+      diamondImage.src = "diamond.png";
+
+      const rockImage = new Image();
+      rockImage.src = "rock.png";
+
+      const bombImage = new Image();
+      bombImage.src = "bomb.png";
+
+      const gunImage = new Image();
+      gunImage.src = "gun.png";
+
+      class Block {
+        constructor(color, row, col) {
+          this.color = color;
+          this.row = row;
+          this.col = col;
+          this.sprite = new Image();
+          this.sprite.src = "block.png";
+        }
+
+        draw() {
+          ctx.drawImage(
+            this.sprite,
+            this.col * BLOCK_SIZE + BOARD_LEFT_MARGIN,
+            this.row * BLOCK_SIZE + BOARD_TOP_MARGIN,
+            BLOCK_SIZE,
+            BLOCK_SIZE
+          );
+        }
+
+        moveLeft() {
+          this.col -= 1;
+        }
+
+        moveRight() {
+          this.col += 1;
+        }
+      }
+
+      class Diamond {
+        constructor(row, col) {
+          this.row = row;
+          this.col = col;
+          this.sprite = diamondImage;
+        }
+
+        draw() {
+          ctx.drawImage(
+            this.sprite,
+            this.col * BLOCK_SIZE + BOARD_LEFT_MARGIN,
+            this.row * BLOCK_SIZE + BOARD_TOP_MARGIN,
+            BLOCK_SIZE,
+            BLOCK_SIZE
+          );
+        }
+
+        moveDown() {
+          this.row += 1;
+        }
+      }
+
+      class Rock {
+        constructor(row, col) {
+          this.row = row;
+          this.col = col;
+          this.sprite = rockImage;
+        }
+
+        draw() {
+          ctx.drawImage(
+            this.sprite,
+            this.col * BLOCK_SIZE + BOARD_LEFT_MARGIN,
+            this.row * BLOCK_SIZE + BOARD_TOP_MARGIN,
+            BLOCK_SIZE,
+            BLOCK_SIZE
+          );
+        }
+
+        moveDown() {
+          this.row += 1;
+        }
+
+        destroy() {
+          // TODO: Implement this function
+        }
+      }
+
+      class Bomb {
+        constructor(row, col) {
+          this.row = row;
+          this.col = col;
+          this.sprite = bombImage;
+        }
+
+        draw() {
+          ctx.drawImage(
+            this.sprite,
+            this.col * BLOCK_SIZE + BOARD_LEFT_MARGIN,
+            this.row * BLOCK_SIZE + BOARD_TOP_MARGIN,
+            BLOCK_SIZE,
+            BLOCK_SIZE
+          );
+          class SpecialItem {
+    constructor(type, row, col) {
+        this.type = type;
+        this.row = row;
+        this.col = col;
+
+        this.sprite = new Image();
+        if (type == "bomb") {
+            this.sprite.src = "images/bomb.png";
+        } else if (type == "arrow") {
+            this.sprite.src = "images/arrow.png";
+        }
+    }
+
+    draw() {
+        ctx.drawImage(
+            this.sprite,
+            this.col * BLOCK_SIZE + BOARD_LEFT_MARGIN,
+            this.row * BLOCK_SIZE + BOARD_TOP_MARGIN,
+            BLOCK_SIZE,
+            BLOCK_SIZE
+        );
+    }
+
+    use() {
+        // TODO: Implement the use() function
+    }
+}
