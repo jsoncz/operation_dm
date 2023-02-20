@@ -351,12 +351,6 @@ class Game:
         # Update the timer for block falling
         self.fall_timer += dt
 
-    
-
-        # Update the players
-        self.player1.update()
-        self.player2.update()
-
     def run(self):
       
         while not self.both_players_ready:
