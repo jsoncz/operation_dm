@@ -1,3 +1,4 @@
+
 import pygame
 import random
 
@@ -43,9 +44,8 @@ class Player:
         self.generate_blocks()  # generate the first set of blocks
         self.is_ready = False
         self.timer = pygame.time.get_ticks()   # Initialize the timer
-        self.speed = 1
-        self.block_y = 0
-
+        self.speed = 5
+    #check for input to control position of the blocks, player 1 uses arrow keys and space bar to rotate, player 2 uses w,a,s,d and q to rotate
     def check_input(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
@@ -59,9 +59,6 @@ class Player:
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_DOWN:
                 self.ready()
-            elif event.key == pygame.K_SPACE:
-                self.ready()
-
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_a:
                 self.move_left()
@@ -74,52 +71,83 @@ class Player:
         elif event.type == pygame.KEYUP:
             if event.key == pygame.K_s:
                 self.ready()
-            elif event.key == pygame.K_q:
-                self.ready()
-                
+    
     def generate_blocks(self):
-        # Generate a random L-shaped block (2 blocks wide and 2 blocks tall), that falls down the grid slowly and can be controlled by players - a new set will only generate once the current set has reached the bottom of the grid
-        self.blocks = []
-        self.current_height = 0
-        block_type = random.randint(1, 5)
-        self.blocks.append(Block(self.x + self.grid_size[0] // 2 - self.block_size, self.y + self.current_height, block_type))
-        block_type = random.randint(1, 5)
-        self.blocks.append(Block(self.x + self.grid_size[0] // 2, self.y + self.current_height, block_type))
-        block_type = random.randint(1, 5)
-        self.blocks.append(Block(self.x + self.grid_size[0] // 2, self.y + self.block_size + self.current_height, block_type))
-        self.current_height = self.block_size
-        self.ready = True
+            # Generate a random L-shaped block (2 blocks wide and 2 blocks tall), that falls down the grid slowly and can be controlled by players - a new set will only generate once the current set has reached the bottom of the grid
+            self.blocks = []
+            block_type = random.randint(1, 5)
+            self.blocks.append(Block(self.x + self.grid_size[0] // 2 - self.block_size, self.y, block_type))
+            block_type = random.randint(1, 5)
+            self.blocks.append(Block(self.x + self.grid_size[0] // 2, self.y, block_type))
+            block_type = random.randint(1, 5)
+            self.blocks.append(Block(self.x + self.grid_size[0] // 2, self.y + self.block_size, block_type))
+            self.ready = True
 
-    #handle movement of sets of blocks, once a set is at the bottom of the grid, it will be added to the grid and a new set will be generated, a set can only move when it's not added to the grid
     def move_left(self):
-        if self.ready:
-            for block in self.blocks:
-                block.x -= self.block_size
-                if block.x < self.x or self.check_collision():
-                    block.x += self.block_size
-                    break
+        for block in self.blocks:
+            block.x -= self.block_size
+            if block.x < self.x or self.check_collision():
+                block.x += self.block_size
+                break
     
     def move_right(self):
-        if self.ready:
-            for block in self.blocks:
-                block.x += self.block_size
-                if block.x >= self.x + self.grid_size[0] or self.check_collision():
-                    block.x -= self.block_size
-                    break
+        for block in self.blocks:
+            block.x += self.block_size
+            if block.x >= self.x + self.grid_size[0] or self.check_collision():
+                block.x -= self.block_size
+                break
     
     def rotate(self):
-        if self.ready:
-            for block in self.blocks:
-                block.x, block.y = block.y, block.x
-                block.x = self.x + self.grid_size[0] // 2 - (block.x - self.x - self.grid_size[0] // 2)
-                if block.x < self.x or block.x >= self.x + self.grid_size[0] or block.y < self.y or block.y >= self.y + self.grid_size[1] or self.check_collision():
-                    block.x, block.y = block.y, block.x
-                    block.x = self.x + self.grid_size[0] // 2 - (block.x - self.x - self.grid_size[0] // 2)
-                    break
+        # Rotate the blocks clockwise
+        for block in self.blocks:
+            temp_x = block.x
+            temp_y = block.y
+            block.x = self.blocks[1].x + self.blocks[1].y - temp_y
+            block.y = self.blocks[1].y - self.blocks[1].x + temp_x
+            if block.x < self.x or block.x >= self.x + self.grid_size[0] or block.y >= self.y + self.grid_size[1] or self.check_collision():
+                block.x = temp_x
+                block.y = temp_y
+                break
     
-    
-    #sets of blocks will drop down the grid using the self.speed, a collision check will be performed every time the set drops down by 1 block and when a block or blocks collide with the bottom of the grid or another block, the set will be added to the grid and a new set will be generated, when a set is added to the grid all blocks within it must be added and like a classic puzzle game blocks that land on top of an empty cell will drop further to fill the empty cells
     def drop(self):
+        # Drop the blocks to the bottom of the grid
+        for block in self.blocks:
+            block.y += self.block_size
+            while block.y < self.y + self.grid_size[1] and not self.check_collision():
+                block.y += self.block_size
+            block.y -= self.block_size
+            self.add_to_grid()
+            self.generate_blocks()
+            if self.check_game_over():
+                self.game_over = True
+            break
+    
+    def ready(self):
+        self.is_ready = True
+    
+    def check_collision(self):
+        # Check if the blocks collide with the grid or other blocks
+        for block in self.blocks:
+            if block.y >= self.y + self.grid_size[1]:
+                return True
+            if self.grid[(block.y - self.y) // self.block_size][(block.x - self.x) // self.block_size] != 0:
+                return True
+        return False
+
+    def add_to_grid(self):
+        # Add the full set to the grid
+        for block in self.blocks:
+            self.grid[(block.y - self.y) // self.block_size][(block.x - self.x) // self.block_size] = block.block_type
+ 
+    def check_game_over(self):
+        # Check if the game is over
+        for block in self.blocks:
+            if block.y == self.y:
+                return True
+        return False
+
+    def update(self):
+        # Update the blocks
         if self.ready:
             for block in self.blocks:
                 block.y += self.block_size
@@ -127,121 +155,13 @@ class Player:
                     block.y -= self.block_size
                     self.add_to_grid()
                     self.generate_blocks()
-                    self.ready = False
+                    if self.check_game_over():
+                        self.game_over = True
                     break
-    
-    def add_to_grid(self):
-        for block in self.blocks:
-            x = (block.x - self.x) // self.block_size
-            y = (block.y - self.y) // self.block_size
-            self.grid[y][x] = block.block_type
-
-    #check for collision 
-    def check_collision(self, x=None, y=None):
-        if x is None and y is None:
-            for block in self.blocks:
-                # Check if any part of the block set is hitting another block on the grid
-                block_row = (block.y - self.y) // self.block_size
-                block_col = (block.x - self.x) // self.block_size
-                if self.grid[block_row][block_col] != 0:
-                    return True
-                # Check if any part of the block set is hitting the sides of the grid
-                if block.x < self.x or block.x >= self.x + self.grid_size[0]:
-                    return True
-                # Check if any part of the block set is hitting the bottom of the grid
-                if block.y + self.block_size >= self.y + self.grid_size[1]:
-                    return True
-            return False
         else:
-            # Check if any part of the block set is hitting another block on the grid
-            block_row = (y - self.y) // self.block_size
-            block_col = (x - self.x) // self.block_size
-            if self.grid[block_row][block_col] != 0:
-                return True
-            # Check if any part of the block set is hitting the sides of the grid
-            if x < self.x or x >= self.x + self.grid_size[0]:
-                return True
-            # Check if any part of the block set is hitting the bottom of the grid
-            if y + self.block_size >= self.y + self.grid_size[1]:
-                return True
-            return False
-
-    def ready(self):
-        self.is_ready = True
-
-
-    def update(self):
-        if self.is_ready:
-            for block in self.blocks:
-                if block.y + self.block_size >= self.y + self.grid_size[1] - self.block_size:
-                    block.y = self.y + self.grid_size[1] - self.block_size
-                    self.add_to_grid()
-                    self.generate_blocks()
-                    self.is_ready = False
-                    break
-                elif self.check_collision(block.x, block.y + self.block_size):
-                    block.y -= self.block_size
-                    self.add_to_grid()
-                    self.generate_blocks()
-                    self.is_ready = False
-                    break
-
-        
-    def draw(self):
-        # draw the grid
-        pygame.draw.rect(self.win, self.grid_color, (self.x, self.y, self.grid_size[0], self.grid_size[1]))
-        for row in range(GRID_HEIGHT):
-            for col in range(GRID_WIDTH):
-                if self.grid[row][col] != 0:
-                    pygame.draw.rect(self.win, self.block_color, (self.x + col * self.block_size, self.y + row * self.block_size, self.block_size, self.block_size))
-        # draw the blocks
-        for block in self.blocks:
-            pygame.draw.rect(self.win, self.block_color, (block.x, block.y, self.block_size, self.block_size))
-        # draw the grid lines
-        for row in range(GRID_HEIGHT + 1):
-            pygame.draw.line(self.win, (255, 255, 255), (self.x, self.y + row * self.block_size), (self.x + self.grid_size[0], self.y + row * self.block_size))
-        for col in range(GRID_WIDTH + 1):
-            pygame.draw.line(self.win, (255, 255, 255), (self.x + col * self.block_size, self.y), (self.x + col * self.block_size, self.y + self.grid_size[1]))
-
-
-    def add_to_grid(self):
-        for block in self.blocks:
-            row = (block.y - self.y) // self.block_size
-            col = (block.x - self.x) // self.block_size
-            if row >= 0 and row < GRID_HEIGHT and col >= 0 and col < GRID_WIDTH:
-                self.grid[row][col] = block.block_type
-
-
-    def check_game_over(self):
-        # Check if the game is over
-        for col in range(GRID_WIDTH):
-            if self.grid[0][col] != 0:
-                return True
-        return False
-    
-    
-
-    def ready(self):
-        self.ready = False
-    
-    def update(self):
-        # move the blocks down slowly and allow players to move them
-        self.timer += 1
-        if self.timer >= self.speed:
-            self.timer = 0
-            if self.ready:
-                for block in self.blocks:
-                    block.y += self.block_size
-                    if block.y >= self.y + self.grid_size[1] or self.check_collision():
-                        block.y -= self.block_size
-                        self.add_to_grid()
-                        self.generate_blocks()
-                        if self.check_game_over():
-                            self.game_over = True
-                        break
-            else:
+            if pygame.time.get_ticks() - self.timer >= 1000:
+                self.timer = pygame.time.get_ticks()
                 self.ready = True
-
 
     def draw(self, screen):
         # Fill the empty cells with a gray background color
@@ -267,7 +187,6 @@ class Player:
         # Draw the falling blocks
         for block in self.blocks:
             block.draw(screen)
-
 
 class Game:
     def __init__(self):
