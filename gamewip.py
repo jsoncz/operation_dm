@@ -117,76 +117,65 @@ class Player:
                     block.x = self.x + self.grid_size[0] // 2 - (block.x - self.x - self.grid_size[0] // 2)
                     break
     
+    
+    #sets of blocks will drop down the grid using the self.speed, a collision check will be performed every time the set drops down by 1 block and when a block or blocks collide with the bottom of the grid or another block, the set will be added to the grid and a new set will be generated, when a set is added to the grid all blocks within it must be added and like a classic puzzle game blocks that land on top of an empty cell will drop further to fill the empty cells
     def drop(self):
         if self.ready:
             for block in self.blocks:
-                while True:
-                    if block.y + self.block_size >= self.y + self.grid_size[1]:
-                        block.y = self.y + self.grid_size[1] - self.block_size
-                        break
-                    elif self.check_collision(block.x, block.y + self.block_size):
-                        block.y -= self.block_size
-                        break
-                    else:
-                        block.y += self.block_size
-            
-            if self.check_game_over():
-                self.game_over = True
-            self.add_to_grid()
-            self.generate_blocks()
-            self.ready = False
-
-#check collision with the grid and other blocks, blocks should stack ontop of each other and not pass through each other, when a collision is detected, the whole set of blocks is added to the grid, since no block can have an empty cell below it, after being added to the grid, any blocks which are sitting above an empty cell will drop to fill the space.
-    def check_collision(self, x = None, y = None):
-        if x is None and y is None:
-            for block in self.blocks:
-                if self.grid[(block.y - self.y) // self.block_size][(block.x - self.x) // self.block_size] != 0:
-                    return True
-        else:
-            if self.grid[(y - self.y) // self.block_size][(x - self.x) // self.block_size] != 0:
-                return True
-        return False
-
-    #add the blocks to the grid, this method is called when a set of blocks reaches the bottom of the grid, the blocks will be added to the grid and the grid will be updated
-    def add_to_grid(self):
-        for block in self.blocks:
-            self.grid[(block.y - self.y) // self.block_size][(block.x - self.x) // self.block_size] = block.block_type
-        self.update_grid()
-
-    def update_grid(self):
-        #check if any row is full, if so, remove it and move all the rows above it down by 1
-        for row in range(GRID_HEIGHT):
-            if 0 not in self.grid[row]:
-                del self.grid[row]
-                self.grid.insert(0, [0] * GRID_WIDTH)
-
-    #check if the game is over, if a block is added to the grid and it's sitting on top of an existing block, the game is over
-    def check_game_over(self):
-        for block in self.blocks:
-            if self.grid[(block.y - self.y) // self.block_size - 1][(block.x - self.x) // self.block_size] != 0:
-                return True
-        return False
-
-    def ready(self):
-        self.is_ready = True
-
-    def update(self):
-        #move the blocks down by 1 block every second
-        if self.is_ready:
-            for block in self.blocks:
-                if block.y + self.block_size >= self.y + self.grid_size[1]:
-                    block.y = self.y + self.grid_size[1] - self.block_size
-                    self.add_to_grid()
-                    self.generate_blocks()
-                    self.is_ready = False
-                    break
-                elif self.check_collision(block.x, block.y + self.block_size):
+                block.y += self.block_size
+                if block.y >= self.y + self.grid_size[1] or self.check_collision():
                     block.y -= self.block_size
                     self.add_to_grid()
                     self.generate_blocks()
-                    self.is_ready = False
+                    self.ready = False
                     break
     
+    def add_to_grid(self):
+        for block in self.blocks:
+            x = (block.x - self.x) // self.block_size
+            y = (block.y - self.y) // self.block_size
+            self.grid[y][x] = block.block_type
+
+    def check_collision(self, x=0, y=0):
+        for block in self.blocks:
+            x = (block.x - self.x) // self.block_size
+            y = (block.y - self.y) // self.block_size
+            if self.grid[y][x] != 0:
+                return True
+        return False
+    
+    def ready(self):
+        self.is_ready = True
+
+
+    def update(self):
+        # If the current set of blocks is not ready to fall, generate a new set of blocks and set the "is_ready" flag to True
+        if not self.is_ready:
+            self.generate_blocks()
+            self.is_ready = True
+            return
+
+        # Move all of the blocks down one space
+        for block in self.blocks:
+            block.y += self.block_size
+
+        # Check for collisions
+        if self.check_collision():
+            # If there is a collision, move all of the blocks back up one space and add them to the grid
+            for block in self.blocks:
+                block.y -= self.block_size
+                self.add_to_grid()
+            self.is_ready = False
+
+        # If the bottom block has reached the bottom of the grid, add the blocks to the grid and generate a new set
+        bottom_blocks = [block for block in self.blocks if block.y + self.block_size >= self.y + self.grid_size[1]]
+        if bottom_blocks:
+            for block in self.blocks:
+                if block not in bottom_blocks:
+                    self.add_to_grid()
+            self.generate_blocks()
+            self.is_ready = False
+
     def draw(self):
         # draw the grid
         pygame.draw.rect(self.win, self.grid_color, (self.x, self.y, self.grid_size[0], self.grid_size[1]))
@@ -206,10 +195,7 @@ class Player:
 
     def add_to_grid(self):
         for block in self.blocks:
-            row = (block.y - self.y) // self.block_size
-            col = (block.x - self.x) // self.block_size
-            if row >= 0 and row < GRID_HEIGHT and col >= 0 and col < GRID_WIDTH:
-                self.grid[row][col] = block.block_type
+            self.grid[(block.y - self.y) // self.block_size][(block.x - self.x) // self.block_size] = block.block_type
 
 
     def check_game_over(self):
