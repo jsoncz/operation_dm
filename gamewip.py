@@ -65,6 +65,7 @@ class Player:
             elif event.key == pygame.K_d:
                 self.move_right()
             elif event.key == pygame.K_q:
+                print("rotate")
                 self.rotate()
             elif event.key == pygame.K_s:
                 self.drop()
@@ -126,7 +127,7 @@ class Player:
         self.is_ready = True
     
     def check_collision(self):
-        # Check if the blocks collide with the grid or other blocks
+        # Check if the blocks collide with the grid or other blocks, if a block hits the bottom of the grid he set should be added to the grid and each block should be set on top of the last row of the grid
         for block in self.blocks:
             if block.y >= self.y + self.grid_size[1]:
                 return True
@@ -135,7 +136,7 @@ class Player:
         return False
 
     def add_to_grid(self):
-        # Add the full set to the grid
+        # Add the full set to the grid, 
         for block in self.blocks:
             self.grid[(block.y - self.y) // self.block_size][(block.x - self.x) // self.block_size] = block.block_type
  
@@ -302,6 +303,9 @@ class Game:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         done = True
+                Player.check_input(self.player1, event)
+                Player.check_input(self.player2, event)
+
                     
               
 
