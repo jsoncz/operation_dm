@@ -136,14 +136,36 @@ class Player:
             y = (block.y - self.y) // self.block_size
             self.grid[y][x] = block.block_type
 
-    def check_collision(self, x=0, y=0):
-        for block in self.blocks:
-            x = (block.x - self.x) // self.block_size
-            y = (block.y - self.y) // self.block_size
-            if self.grid[y][x] != 0:
+    #check for collision 
+    def check_collision(self, x=None, y=None):
+        if x is None and y is None:
+            for block in self.blocks:
+                # Check if any part of the block set is hitting another block on the grid
+                block_row = (block.y - self.y) // self.block_size
+                block_col = (block.x - self.x) // self.block_size
+                if self.grid[block_row][block_col] != 0:
+                    return True
+                # Check if any part of the block set is hitting the sides of the grid
+                if block.x < self.x or block.x >= self.x + self.grid_size[0]:
+                    return True
+                # Check if any part of the block set is hitting the bottom of the grid
+                if block.y + self.block_size >= self.y + self.grid_size[1]:
+                    return True
+            return False
+        else:
+            # Check if any part of the block set is hitting another block on the grid
+            block_row = (y - self.y) // self.block_size
+            block_col = (x - self.x) // self.block_size
+            if self.grid[block_row][block_col] != 0:
                 return True
-        return False
-    
+            # Check if any part of the block set is hitting the sides of the grid
+            if x < self.x or x >= self.x + self.grid_size[0]:
+                return True
+            # Check if any part of the block set is hitting the bottom of the grid
+            if y + self.block_size >= self.y + self.grid_size[1]:
+                return True
+            return False
+
     def ready(self):
         self.is_ready = True
 
@@ -151,7 +173,7 @@ class Player:
     def update(self):
         if self.is_ready:
             for block in self.blocks:
-                if block.y + self.block_size >= self.y + self.grid_size[1]:
+                if block.y + self.block_size >= self.y + self.grid_size[1] - self.block_size:
                     block.y = self.y + self.grid_size[1] - self.block_size
                     self.add_to_grid()
                     self.generate_blocks()
@@ -163,7 +185,8 @@ class Player:
                     self.generate_blocks()
                     self.is_ready = False
                     break
-    
+
+        
     def draw(self):
         # draw the grid
         pygame.draw.rect(self.win, self.grid_color, (self.x, self.y, self.grid_size[0], self.grid_size[1]))
