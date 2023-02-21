@@ -43,7 +43,7 @@ class Player:
         self.generate_blocks()  # generate the first set of blocks
         self.is_ready = False
         self.timer = pygame.time.get_ticks()   # Initialize the timer
-        self.speed = 10
+        self.speed = 1
         self.block_y = 0
 
     def check_input(self, event):
@@ -87,7 +87,7 @@ class Player:
         self.blocks.append(Block(self.x + self.grid_size[0] // 2, self.y + self.current_height, block_type))
         block_type = random.randint(1, 5)
         self.blocks.append(Block(self.x + self.grid_size[0] // 2, self.y + self.block_size + self.current_height, block_type))
-        self.current_height += self.block_size
+        self.current_height = self.block_size
         self.ready = True
 
     #handle movement of sets of blocks, once a set is at the bottom of the grid, it will be added to the grid and a new set will be generated, a set can only move when it's not added to the grid
@@ -149,33 +149,21 @@ class Player:
 
 
     def update(self):
-        # If the current set of blocks is not ready to fall, generate a new set of blocks and set the "is_ready" flag to True
-        if not self.is_ready:
-            self.generate_blocks()
-            self.is_ready = True
-            return
-
-        # Move all of the blocks down one space
-        for block in self.blocks:
-            block.y += self.block_size
-
-        # Check for collisions
-        if self.check_collision():
-            # If there is a collision, move all of the blocks back up one space and add them to the grid
+        if self.is_ready:
             for block in self.blocks:
-                block.y -= self.block_size
-                self.add_to_grid()
-            self.is_ready = False
-
-        # If the bottom block has reached the bottom of the grid, add the blocks to the grid and generate a new set
-        bottom_blocks = [block for block in self.blocks if block.y + self.block_size >= self.y + self.grid_size[1]]
-        if bottom_blocks:
-            for block in self.blocks:
-                if block not in bottom_blocks:
+                if block.y + self.block_size >= self.y + self.grid_size[1]:
+                    block.y = self.y + self.grid_size[1] - self.block_size
                     self.add_to_grid()
-            self.generate_blocks()
-            self.is_ready = False
-
+                    self.generate_blocks()
+                    self.is_ready = False
+                    break
+                elif self.check_collision(block.x, block.y + self.block_size):
+                    block.y -= self.block_size
+                    self.add_to_grid()
+                    self.generate_blocks()
+                    self.is_ready = False
+                    break
+    
     def draw(self):
         # draw the grid
         pygame.draw.rect(self.win, self.grid_color, (self.x, self.y, self.grid_size[0], self.grid_size[1]))
@@ -195,7 +183,10 @@ class Player:
 
     def add_to_grid(self):
         for block in self.blocks:
-            self.grid[(block.y - self.y) // self.block_size][(block.x - self.x) // self.block_size] = block.block_type
+            row = (block.y - self.y) // self.block_size
+            col = (block.x - self.x) // self.block_size
+            if row >= 0 and row < GRID_HEIGHT and col >= 0 and col < GRID_WIDTH:
+                self.grid[row][col] = block.block_type
 
 
     def check_game_over(self):
